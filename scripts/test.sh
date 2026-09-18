@@ -34,10 +34,22 @@ for i in $(seq 1 30); do
 done
 
 echo "Running backend integration test suite..."
+# Coverage is produced inside the ephemeral container (npm run test:coverage,
+# which is just `jest --coverage`) and captured out via stdout — same
+# approach as the Code Quality stage's eslint/oxlint reports — rather than
+# bind-mounting backend/coverage over the image, which would risk the same
+# "host checkout shadows the image's baked-in node_modules" bug that broke
+# an earlier project's Build stage. The `>&2` keeps npm's own script banner
+# and Jest's test-result output going to stderr (still visible live in the
+# Jenkins console) so stdout carries nothing but the lcov report; only if
+# the tests pass does `cat` run and put that report on stdout for the host
+# redirect below to capture.
+mkdir -p backend/coverage
 docker run --rm \
     --network "$NETWORK" \
     -e NODE_ENV=test \
     -e MONGO_URI=mongodb://taskflow-ci-db:27017/taskflow-test \
     -e JWT_SECRET=ci-test-secret-not-for-production \
     "$DEV_IMAGE" \
-    npm test
+    sh -c 'npm run test:coverage >&2 && cat coverage/lcov.info' \
+    > backend/coverage/lcov.info
