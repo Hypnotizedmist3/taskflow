@@ -1,0 +1,15 @@
+# Local Docker registry — real artifact storage/versioning for the Build
+# stage. Start once: docker compose -f docker-compose.registry.yml up -d
+services:
+  registry:
+    image: registry:2
+    container_name: taskflow-registry
+    ports:
+      # Host port 5061 avoids both the AirPlay Receiver conflict on 5000
+      # and the port used by any other project's local registry (5050).
+      - "5061:5000"
+    volumes:
+      - registry_data:/var/lib/registry
+
+volumes:
+  registry_data:

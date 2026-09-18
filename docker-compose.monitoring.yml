@@ -1,0 +1,47 @@
+# Monitoring stack — Prometheus scrapes /health on staging + production via
+# blackbox_exporter, Alertmanager fires on downtime, Grafana visualises it.
+# Start once staging (and, for the full demo, production) are deployed:
+#   docker compose -f docker-compose.monitoring.yml up -d
+services:
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    container_name: taskflow-blackbox
+    networks:
+      - taskflow-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: taskflow-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alert.rules.yml:/etc/prometheus/alert.rules.yml
+    ports:
+      - "4090:9090"
+    networks:
+      - taskflow-net
+    depends_on:
+      - blackbox
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: taskflow-alertmanager
+    ports:
+      - "4093:9093"
+    networks:
+      - taskflow-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: taskflow-grafana
+    ports:
+      - "4080:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    networks:
+      - taskflow-net
+    depends_on:
+      - prometheus
+
+networks:
+  taskflow-net:
+    external: true

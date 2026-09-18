@@ -1,0 +1,28 @@
+# Processed by the official nginx image's built-in envsubst-on-startup
+# (files under /etc/nginx/templates/*.template -> /etc/nginx/conf.d/*.conf),
+# substituting ${BACKEND_HOST} with whichever backend container this image
+# is deployed alongside (see scripts/deploy.sh). This is what lets one
+# frontend image work unmodified in both staging and production: the app's
+# own JS always calls the relative path /api/..., and nginx routes that to
+# the correct backend for this deployment.
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://${BACKEND_HOST}:3000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location = /health {
+        return 200 'ok';
+        add_header Content-Type text/plain;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

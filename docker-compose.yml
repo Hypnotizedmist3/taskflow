@@ -1,0 +1,44 @@
+# Local development only. docker compose up
+services:
+  mongo:
+    image: mongo:7
+    container_name: taskflow-dev-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - taskflow_dev_db:/data/db
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    container_name: taskflow-backend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      MONGO_URI: mongodb://taskflow-dev-db:27017/taskflow
+      JWT_SECRET: dev-secret-change-me
+      JWT_EXPIRES_IN: 7d
+    depends_on:
+      - mongo
+    volumes:
+      - ./backend/src:/app/src
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    container_name: taskflow-frontend-dev
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000
+    volumes:
+      - ./frontend/src:/app/src
+    depends_on:
+      - backend
+
+volumes:
+  taskflow_dev_db:

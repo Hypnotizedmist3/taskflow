@@ -1,0 +1,20 @@
+groups:
+  - name: taskflow-availability
+    rules:
+      - alert: SiteDown
+        expr: probe_success == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.instance }} is down"
+          description: "Probe for {{ $labels.instance }} has failed for 30 seconds."
+
+      - alert: SlowResponse
+        expr: probe_duration_seconds > 1.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.instance }} is responding slowly"
+          description: "{{ $labels.instance }} took more than 1.5s to respond for 1 minute."
